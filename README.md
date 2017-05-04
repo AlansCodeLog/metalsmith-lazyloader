@@ -11,10 +11,12 @@ npm install metalsmith-lazyloader
 
 ```javascript
 var metalsmith = require('metalsmith');
-var addExtension = require('metalsmith-lazyloader');
+var lazyloader = require('metalsmith-lazyloader');
 
 metalsmith
-    .use(lazyloader())
+    .use(lazyloader({
+        //options
+    }))
 ```
 
 ## Options
