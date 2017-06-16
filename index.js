@@ -1,6 +1,8 @@
 const sizeOf = require('image-size');
 const request = require('sync-request');
 const fs = require('fs-extra');
+const isLocal = require("url-local");
+const path = require('path');
 
 module.exports = plugin;
 
@@ -18,57 +20,49 @@ function plugin(opts){
     }
     function check_cache(src) {
         if (typeof cache.lazyloader !== "undefined" && typeof cache.lazyloader[src] !== "undefined") {
-            if (cache.lazyloader[src] == src) {
-                console.log("(cached error) Lazy loaded could not find image: " + src)
+            if (cache.lazyloader[src] == "error") {
+                console.log("Lazyload cached error on image: " + src)
             }
             return true
         } else {
             return false
         }
     }
-    function get_size (src, is_relative) {
-        var fetch_src = is_relative ? src.slice(1, src.length) : src
+    function get_size (src, local) {
         var dimensions;
         try {
-            dimensions = sizeOf(fetch_src)
+            if (local) {
+                dimensions = sizeOf(path.join(process.env.PWD, src))
+            } else {
+                var image = request('GET', src)
+                var dimensions = sizeOf(image.body)
+            }
         } catch (err){
+            handle(err)
+        }
+        function handle (err) {
             if (err) {
-                if (err.code === 'ENOENT') {
-                    console.log("Lazy loaded could not find image: " + src)
-                } else {
-                    throw err;
-                }
                 //cache error
                 cache.lazyloader = cache.lazyloader || {}
-                cache.lazyloader[src] = src
+                cache.lazyloader[src] = "error"
+                console.log(cache.lazyloader[src]);
+                if (local && err.code === 'ENOENT') {
+                    console.log("Lazy loaded could not find image: " + src)
+                } else if (!local && err.message.indexOf("ECONNREFUSED") !== -1) {
+                    console.log("Lazy loaded could not fetch image, connection refused: " + src)
+                } else if (err.message.indexOf("unsupported file type") !== -1) {
+                    console.log("Lazy loaded could read this image, the format is unsupported : " + src)
+                } else if (err.message.indexOf("Index out of range") !== -1) {
+                    console.log("Lazy loaded could read this image, it's likely the file is corrupt: " + src)
+                } else {
+                    console.log(src)
+                    throw err
+                }
             } else {
                 cache.lazyloader = cache.lazyloader || {}
             }
         }
         return dimensions
-    }
-    function fetch_size (src, is_relative) {
-        var fetch_src = is_relative ? src.slice(1, src.length) : src
-        var dimensions;
-        try {
-            var image = request('GET', fetch_src)
-            var dimensions = sizeOf(image.body)
-        } catch (err){
-            if (err) {
-                console.log("Lazy loaded could not fetch image: " + fetch_src)
-                //cache error
-                cache.lazyloader = cache.lazyloader || {}
-                cache.lazyloader[src] = src
-            } else {
-                cache.lazyloader = cache.lazyloader || {}
-                console.log("no error");
-            }
-        }
-        if (typeof dimensions !== undefined) {
-            return dimensions
-        } else {
-            return undefined
-        }
     }
     return function(files, metalsmith, done){
         Object.keys(files).forEach(function(file){
@@ -105,15 +99,16 @@ function plugin(opts){
                     var replacement = lazy_attribute+"=\""+src+"\""
                     if (typeof opts.fetch_size !== "undefined" && opts.fetch_size == true) {
                         //Check if image is relative or local.
-                        var is_relative = src.slice(0,1) == "/" ? true : false
                         //if it is, get size locally.
-                        if (is_relative || fs.existsSync(src)) {
-                            var dimensions = get_size(src, is_relative)
+                        if (isLocal(src)) {
+                            var dimensions = get_size(src, true)
                         } else { //else attempt to fetch image.
-                            var dimensions = fetch_size(src, is_relative)
+                            var dimensions = get_size(src, false)
                         }
                         if (typeof dimensions !== "undefined") {//any errors return original match
                             replacement = replacement + " width=\""+dimensions.width+"\" height=\""+dimensions.height+"\""
+                        } else {
+                            return match
                         }
                     }
                     //Add Invisible SVG
