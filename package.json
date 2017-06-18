@@ -1,6 +1,6 @@
 {
   "name": "metalsmith-lazyloader",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A Metalsmith plugin for adding lazy loading related attributes to images.",
   "main": "index.js",
   "dependencies": {

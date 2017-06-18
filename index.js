@@ -82,10 +82,12 @@ function plugin(opts){
                 //store original match for noscript
                 var original = match
                 //LAZY CLASS
-                if (match.includes("class" && typeof opts.lazy_class !=="undefined" && opts.lazy_class == true )){
-                    match = match.replace(/(class=\")/g, "$1"+opts.lazy_class+" ")
-                } else {
-                    match = match.replace(/img/, "img class=\""+opts.lazy_class+"\"")
+                if (typeof opts.lazy_class !=="undefined" && opts.lazy_class == true) {
+                    if (match.includes("class")){
+                        match = match.replace(/(class=\")/g, "$1"+opts.lazy_class+" ")
+                    } else {
+                        match = match.replace(/img/, "img class=\""+opts.lazy_class+"\"")
+                    }
                 }
                 //HANDLE SRC
                 match = match.replace(/src=\"(.*?)\"/, function(match, src){
