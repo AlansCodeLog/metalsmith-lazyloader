@@ -21,17 +21,19 @@ function plugin(opts){
     function check_cache(src) {
         if (typeof cache.lazyloader !== "undefined" && typeof cache.lazyloader[src] !== "undefined") {
             if (cache.lazyloader[src] == "error") {
-                console.log("Lazyload cached error on image: " + src)
+                console.log("Lazyloader cached error on image: " + src)
             }
             return true
         } else {
             return false
         }
     }
-    function get_size (src, local) {
+    function get_size (src, original) {
         var dimensions;
+        var local = false;
         try {
-            if (local) {
+            if (isLocal(src)) {
+                local = true
                 dimensions = sizeOf(path.join(process.env.PWD, src))
             } else {
                 var image = request('GET', src)
@@ -45,15 +47,14 @@ function plugin(opts){
                 //cache error
                 cache.lazyloader = cache.lazyloader || {}
                 cache.lazyloader[src] = "error"
-                console.log(cache.lazyloader[src]);
                 if (local && err.code === 'ENOENT') {
-                    console.log("Lazy loaded could not find image: " + src)
+                    console.log("Lazyloader could not find image: " + src, err.message)
                 } else if (!local && err.message.indexOf("ECONNREFUSED") !== -1) {
-                    console.log("Lazy loaded could not fetch image, connection refused: " + src)
+                    console.log("Lazyloader could not fetch image, connection refused: " + src)
                 } else if (err.message.indexOf("unsupported file type") !== -1) {
-                    console.log("Lazy loaded could read this image, the format is unsupported : " + src)
+                    console.log("Lazyloader could read this image, the format is unsupported : " + src)
                 } else if (err.message.indexOf("Index out of range") !== -1) {
-                    console.log("Lazy loaded could read this image, it's likely the file is corrupt: " + src)
+                    console.log("Lazyloader could read this image, it's likely the file is corrupt: " + src)
                 } else {
                     console.log(src)
                     throw err
@@ -102,11 +103,7 @@ function plugin(opts){
                     if (typeof opts.fetch_size !== "undefined" && opts.fetch_size == true) {
                         //Check if image is relative or local.
                         //if it is, get size locally.
-                        if (isLocal(src)) {
-                            var dimensions = get_size(src, true)
-                        } else { //else attempt to fetch image.
-                            var dimensions = get_size(src, false)
-                        }
+                        var dimensions = get_size(src, original)
                         if (typeof dimensions !== "undefined") {//any errors return original match
                             replacement = replacement + " width=\""+dimensions.width+"\" height=\""+dimensions.height+"\""
                         } else {
