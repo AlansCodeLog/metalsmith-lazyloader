@@ -54,6 +54,11 @@ If fetch_size is set to true a viewbox will be added to the svg with the width a
 data:image/svg+xml;charset=utf-8,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox%3D'0 0 WIDTH HEIGHT' %2F%3E
 ```
 
+### `force_absolute`
+(optional, boolean)
+
+Gives relative/local images an absolute path. Metalsmith's metadata must include a site.url property. 
+
 ### `before` / `after`
 (optional, string)
 

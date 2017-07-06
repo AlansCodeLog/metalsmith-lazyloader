@@ -98,8 +98,12 @@ function plugin(opts){
                     }
                     //Create Basic Replacement
                     var lazy_attribute = typeof opts.lazy_attribute !=="undefined"? opts.lazy_attribute : "data-src"
+                    if (typeof opts.force_absolute !== "undefined" && opts.force_absolute == true && typeof metalsmith._metadata.site.url !== "undefined") {
+                        var replacement = lazy_attribute+"=\""+metalsmith._metadata.site.url+src+"\""
 
-                    var replacement = lazy_attribute+"=\""+src+"\""
+                    } else {
+                        var replacement = lazy_attribute+"=\""+src+"\""
+                    }
                     if (typeof opts.fetch_size !== "undefined" && opts.fetch_size == true) {
                         //Check if image is relative or local.
                         //if it is, get size locally.
